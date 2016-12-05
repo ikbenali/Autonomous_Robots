@@ -138,11 +138,14 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 	
 	function add_to_population(population)
 		--TODO: Choose random parents and choose mutation or crossover
-		
-		child = crossover(parent1, parent2)
+		if true then
+			
+			child = crossover(parent1, parent2)
 		else
-		child = mutation(person)
-	
+			rand = math.random() * (#population - 1)
+			child = mutation(population[rand])
+		end
+		
 		table.insert(population, child)
 	end
 	
@@ -169,7 +172,11 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 	end
 	
 	function mutation(person)
-		--TODO
+		child = {}
+		child[0] = 0
+		for i = 1, 3 do
+			child[i] = person[i] + randomFloat(-0.0001 , 0.0001)
+		end
 	end
 	
 	-- Save growth data to a csv file to create graph
@@ -306,7 +313,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     if (cnt>=20 or simGetObjectPosition(h,-1)[1] > 7 ) then 
 		-- Fitness gets calculated and saved in the matrix
-		population[counter][4] == cnt
+		population[counter][4] = cnt
 		population[counter][5] = simGetObjectPosition(h,-1)[1]
 		population[counter][6] = fittness_test(population[counter][4], population[counter][5])
 
