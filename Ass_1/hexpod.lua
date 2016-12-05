@@ -25,6 +25,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
 	-- ******************
 	-- global variabeles
+	genenration = 0
 	counter = 0
 	N = 10				-- Matrix rows  -
 
@@ -34,7 +35,9 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     function createpopulation(N)
       -- Create Nx6 Matrix
-      for i=0,N do
+	  local population = {}
+	  
+      for i = 0, N do
         population[i] = {}
         population[i][0] = i
         population[i][1] = randomFloat(0.001,0.01)
@@ -127,6 +130,50 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 			end
 			j = j + 1
 		end
+		
+		--TODO: choosing part and droping other population
+		
+	end
+	
+	--TODO: Choose random parents and choose mutation or crossover
+	--[[function add_to_population(population)
+		
+		
+	
+		child = crossover(parent1, parent2)
+		else
+		child = mutation(person)
+	
+	
+	
+	
+		table.insert(population, child)
+	end]]
+	
+	function crossover(parent1, parent2)
+		if genenration % 2 == 0 then
+			return interpolation(parent1, parent2)
+		else
+			return extrapolation(parent1, parent2)
+		end
+	end
+	
+	function interpolation(parent1, parent2)
+		child = {}
+		child[0] = 0
+		for i = 1, 3 do
+			child[i] = randomFloat(parent1[i], parent2[i])
+		end
+		
+		return child 
+	end
+	
+	function extrapolation(parent1, parent2)
+		--TODO
+	end
+	
+	function mutation(person)
+		--TODO
 	end
 	
 	-- Save growth data to a csv file to create graph
@@ -141,8 +188,8 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     -- This is the initialization (only executed once)
     if (simGetScriptExecutionCount()==0) then
-        population = createpopulation(N)                     -- create the matrix
 
+		population = createpopulation(N)                     -- create the matrix
 
         baseHandle=simGetObjectHandle('hexa_base')    -- get pointer to the base
         interModuleDelay=4                          -- each leg has a delay of 4 entries in the movement table (offset in sliding window)
@@ -288,11 +335,17 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
         if (counter == N) then
 
-          -- End of populatio reached, calculate fitness of population
+			
+		
+          -- End of population reached, calculate fitness of population
           -- crossover
           -- Mutation
-          -- set i to zero again an rerun population
+			--[[while #population < N do
+				add_to_population(population)
+			end]]
 
+			counter = 0
+			genenration = genenration + 1
         else
           cnt = 0
           step = population[counter][1]
