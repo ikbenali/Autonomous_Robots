@@ -139,8 +139,11 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 	function add_to_population(population)
 		--TODO: Choose random parents and choose mutation or crossover
 		if true then
-			
-			child = crossover(parent1, parent2)
+			parent1 = math.random() * (#population - 1)
+			parent2 = repeat
+				math.random() * (#population - 1)
+			until(parent1 ~= parent2)
+			child = crossover(population[parent1], population[parent2])
 		else
 			rand = math.random() * (#population - 1)
 			child = mutation(population[rand])
