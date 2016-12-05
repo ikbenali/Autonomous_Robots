@@ -133,22 +133,18 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		
 		--TODO: choosing part and droping other population
 		
+		return population
 	end
 	
-	--TODO: Choose random parents and choose mutation or crossover
-	--[[function add_to_population(population)
+	function add_to_population(population)
+		--TODO: Choose random parents and choose mutation or crossover
 		
-		
-	
 		child = crossover(parent1, parent2)
 		else
 		child = mutation(person)
 	
-	
-	
-	
 		table.insert(population, child)
-	end]]
+	end
 	
 	function crossover(parent1, parent2)
 		if genenration % 2 == 0 then
@@ -308,10 +304,11 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     -- **********************************************************************
 
-    if (cnt>=20) then -- or xdist has reached final
-      -- time == cnt
-      -- xdist = simGetObjectPosition(h,-1)
-
+    if (cnt>=20 or simGetObjectPosition(h,-1)[1] > 7 ) then 
+		-- Fitness gets calculated and saved in the matrix
+		population[counter][4] == cnt
+		population[counter][5] = simGetObjectPosition(h,-1)[1]
+		population[counter][6] = fittness_test(population[counter][4], population[counter][5])
 
     -- RESTORE (reset to test new individual)
         -- // reset bot to its initial position
@@ -334,16 +331,12 @@ if (sim_call_type==sim_childscriptcall_actuation) then
         end
 
         if (counter == N) then
-
-			
-		
-          -- End of population reached, calculate fitness of population
-          -- crossover
-          -- Mutation
-			--[[while #population < N do
+			population = rouletteselection(population)
+			while #population < N do
 				add_to_population(population)
-			end]]
-
+			end
+			
+			save_gen_csv(population, genenration)
 			counter = 0
 			genenration = genenration + 1
         else
