@@ -23,10 +23,10 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 -- Genetic Algorithm
 -- ************************************************************************
 
--- ******************
--- global variabeles
-   counter = 0
-   N = 10          -- Matrix rows  -
+	-- ******************
+	-- global variabeles
+	counter = 0
+	N = 10				-- Matrix rows  -
 
     function randomFloat(lower, upper)
         return lower + math.random()  * (upper - lower);
@@ -48,15 +48,94 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       return population
     end
 
-    function rouletteselection(population)
-      -- determine fitness of pool
-      fitness_sum = 0
-      for i=0,N do
-        fitness_sum = fitness_sum + population[i][6]
-      end
-      return fitness_sum
-    end
+	function update_person(person, finish_time, distance)
+		-- Add person's walking results to Matrix
+		return {person[0], person[1], person[2], person[3], finish_time, distance, fitness(finish_time, distance)}
+	end
 
+	-- Returns fitness within 0-200
+	function fittness_test(finish_time, distance)	
+		if distance == 7 then
+			return 100 + fitness_speed(finish_time)
+		end
+		return fitness_distance(distance)
+	end
+
+	-- Returns fitness for time spend
+	function fitness_speed(finish_time)
+		return (finish_time / 20) * 100
+	end
+
+	-- Returns fitness for distance cleared
+	function fitness_distance(distance)
+		return (distance / 7) * 100 
+	end
+	
+	-- Save a generations data to a csv file
+	function save_gen_csv(population, gen)
+		file = io.open("gen_" .. gen .. ".csv", "w+")
+		for val in population do
+			for v in val do
+				file:write(v .. "; ")
+			end
+			file:write("\n")
+		end
+		file.close()
+	end
+	
+	-- Calculate the 
+	function getChance(fit, sum)
+		chance = fit / sum
+		return chance
+	end
+	
+    function rouletteselection(population)
+		-- determine fitness of pool
+		fitness_min = 200
+		fitness_max = 0
+		fitness_sum = 0
+		rouletteTable = { {},{},{},{} }
+		
+		--get min,sum,max
+		for i = 0, #population do
+			if population[i][6] < fitness_min then
+				fitness_min = population[i][6]
+			end
+
+			if population[i][6] > fitness_max then
+				fitness_max = population[i][6]
+			end
+
+			fitness_sum = fitness_sum + population[i][6]
+		end
+		
+		fitness_average = fitness_average / N
+
+		save_growth_csv(fitness_max, fitness_average, fitness_min)
+		
+		j = 0
+		for i=0, #population do
+			chance = getChance(population[i][6], fitness_sum)
+			if (chance >= 0.8) then -- 80%
+				rouletteTable[0][j] = population[i][6]
+			elseif (chance >= 0.6) then -- 60%
+				rouletteTable[1][j] = population[i][6]
+			elseif (chance >= 0.4) then -- 40%
+				rouletteTable[2][j] = population[i][6]
+			else
+				rouletteTable[3][j] = population[i][6]
+			end
+			j = j + 1
+		end
+	end
+	
+	-- Save growth data to a csv file to create graph
+	function save_growth_csv(maximum, average, minimum)
+		file = io.open("growth.csv", "w+")
+		file:write(maximum .. "; " .. average .. "; " .. minimum "\n")
+		file.close()
+	end
+	
 -- This hexapod model demonstrates distributed control, where each leg is controlled by its own script
     -- This is meant as an example only. Have a look at the control method of the "ant hexapod", that is much simpler.
 
