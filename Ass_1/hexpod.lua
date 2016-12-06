@@ -173,7 +173,6 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		end
 		
 		parentPopulation = selectParentPopulation(rouletteTable, fitness_sum)
-
 		return parentPopulation
 	end
 	
@@ -184,24 +183,24 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 			parent2 = repeat
 				math.random() * (#population - 1)
 			until(parent1 ~= parent2)
-			child = crossover(population[parent1], population[parent2])
+			child = crossover(population[parent1], population[parent2], population)
 		else
-			rand = math.random() * (#population - 1)
+			rand = math.random() * (#population - 1, population)
 			child = mutation(population[rand])
 		end
 		
 		table.insert(population, child)
 	end
 	
-	function crossover(parent1, parent2)
+	function crossover(parent1, parent2, population)
 		if genenration % 2 == 0 then
-			return interpolation(parent1, parent2)
+			return interpolation(parent1, parent2, population)
 		else
-			return extrapolation(parent1, parent2)
+			return extrapolation(parent1, parent2, population)
 		end
 	end
 	
-	function interpolation(parent1, parent2)
+	function interpolation(parent1, parent2, population)
 		child = {}
 		-- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
 		child[0] = #population + 1
@@ -214,25 +213,28 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		return child
 	end
 
-	function extrapolation(parent1, parent2, #population)
+	function extrapolation(parent1, parent2, population)
 		child = {}
 		child[0] = #population + 1
-	-- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
+		-- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
 
 		alpha = randomFloat(0,1)
 		beta = 2*(alpha * parent1[6]) / (alpha * parent1[6] + (1 - alpha) * parent2[6])
 
-	for i = 1, 3 do
-		if (beta < 1) then
-			child[i] = parent2[i] + ((1-beta) * parent1[i]) * (parent1[i] - parent2[i])
-		else
-			child[i] = parent1[i] + (beta-1) * parent2[i] * (parent2[i] - parent1[i])
+		for i = 1, 3 do
+			if (beta < 1) then
+				child[i] = parent2[i] + ((1-beta) * parent1[i]) * (parent1[i] - parent2[i])
+			else
+				child[i] = parent1[i] + (beta-1) * parent2[i] * (parent2[i] - parent1[i])
+			end
 		end
-	return child
+		
+		return child
 	end	
-	function mutation(person)
+	
+	function mutation(person, population)
 		child = {}
-		child[0] = 0
+		child[0] = #population + 1
 		for i = 1, 3 do
 			child[i] = person[i] + randomFloat(-0.0001 , 0.0001)
 		end
@@ -370,51 +372,53 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     -- **********************************************************************
 
-    if (cnt>=20 or simGetObjectPosition(h,-1)[1] > 7 ) then 
-		-- Fitness gets calculated and saved in the matrix
-		population[counter][4] = cnt
-		population[counter][5] = simGetObjectPosition(h,-1)[1]
-		population[counter][6] = fittness_test(population[counter][4], population[counter][5])
+	if (cnt>=20) then -- or xdist has reached final
 
-    -- RESTORE (reset to test new individual)
-        -- // reset bot to its initial position
-        -- // code taken from: http://www.forum.coppeliarobotics.com/viewtopic.php?f=9&t=685
-        -- // apparently simSetObjectPosition() itself does not implicitly/sufficiently call simResetDynamicObject() for all the children
-        t={simGetObjectHandle('hexapod')}
-        while (#t~=0) do
-           h=t[1]
-           simResetDynamicObject(h)
-           simSetObjectPosition(h, -1, botPositionInitial[h])
-           simSetObjectOrientation(h, -1, botOrientationInitial[h])
-           table.remove(t,1)
-           ind=0
-           child=simGetObjectChild(h,ind)
-           while (child~=-1) do
-              table.insert(t,child)
-              ind=ind+1
-              child=simGetObjectChild(h,ind)
-           end
-        end
+		xdist = simGetObjectPosition(h,-1)[1]
+		finish_time = cnt
 
-        if (counter == N) then
+		-- RESTORE (reset to test new individual)
+		-- // reset bot to its initial position
+		-- // code taken from: http://www.forum.coppeliarobotics.com/viewtopic.php?f=9&t=685
+		-- // apparently simSetObjectPosition() itself does not implicitly/sufficiently call simResetDynamicObject() for all the children
+
+		t={simGetObjectHandle('hexapod')}
+		while (#t~=0) do
+			h=t[1]
+			simResetDynamicObject(h)
+			simSetObjectPosition(h, -1, botPositionInitial[h])
+			simSetObjectOrientation(h, -1, botOrientationInitial[h])
+			table.remove(t,1)
+			ind=0
+			child=simGetObjectChild(h,ind)
+			while (child~=-1) do
+				table.insert(t,child)
+				ind=ind+1
+				child=simGetObjectChild(h,ind)
+			end
+		end
+
+		if (counter == N) then
 			population = rouletteselection(population)
 			while #population < N do
 				add_to_population(population)
 			end
-			
+
 			save_gen_csv(population, genenration)
 			counter = 0
 			genenration = genenration + 1
-        else
-          cnt = 0
-          step = population[counter][1]
-          vstep = population[counter][2]
-          rearExtent= population[counter][3]
-          counter = counter + 1
-        end
-
-    end
-    -- END RESTORE
+		else
+			cnt = 0
+			step = population[counter][1]
+			vstep = population[counter][2]
+			rearExtent= population[counter][3]
+			population[counter][4] = xdist
+			population[counter][5] = finish_time
+			population[counter][6] = fittness_test(xdist, time)
+			counter = counter + 1
+		end
+	end
+	-- END RESTORE
 
     -- **********************************************************************
 
