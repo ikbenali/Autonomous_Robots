@@ -203,18 +203,33 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 	
 	function interpolation(parent1, parent2)
 		child = {}
-		child[0] = 0
+		-- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
+		child[0] = #population + 1
+		alpha = randomFloat(0,1)
+		beta = (alpha * parent1[6]) / (alpha * parent1[6] + (1 - alpha) * parent2[6])
+
 		for i = 1, 3 do
-			child[i] = randomFloat(parent1[i], parent2[i])
+			child[i] = beta * parent1[i] + (1-beta) * parent2[i]
 		end
-		
-		return child 
+		return child
 	end
-	
-	function extrapolation(parent1, parent2)
-		--TODO
-	end
-	
+
+	function extrapolation(parent1, parent2, #population)
+		child = {}
+		child[0] = #population + 1
+	-- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
+
+		alpha = randomFloat(0,1)
+		beta = 2*(alpha * parent1[6]) / (alpha * parent1[6] + (1 - alpha) * parent2[6])
+
+	for i = 1, 3 do
+		if (beta < 1) then
+			child[i] = parent2[i] + ((1-beta) * parent1[i]) * (parent1[i] - parent2[i])
+		else
+			child[i] = parent1[i] + (beta-1) * parent2[i] * (parent2[i] - parent1[i])
+		end
+	return child
+	end	
 	function mutation(person)
 		child = {}
 		child[0] = 0
