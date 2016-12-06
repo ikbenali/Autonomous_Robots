@@ -161,13 +161,13 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		for i=0, #population do
 			chance = getChance(population[i][6], fitness_sum)
 			if (chance >= 0.8) then -- 80%
-				rouletteTable[0][j] = population[i][6]
+				rouletteTable[0][j] = population[i][0]
 			elseif (chance >= 0.6) then -- 60%
-				rouletteTable[1][j] = population[i][6]
+				rouletteTable[1][j] = population[i][0]
 			elseif (chance >= 0.4) then -- 40%
-				rouletteTable[2][j] = population[i][6]
+				rouletteTable[2][j] = population[i][0]
 			else
-				rouletteTable[3][j] = population[i][6]
+				rouletteTable[3][j] = population[i][0]
 			end
 			j = j + 1
 		end
@@ -232,6 +232,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		return child
 	end	
 	
+	--TODO: Klopt dit??
 	function mutation(person, population)
 		child = {}
 		child[0] = #population + 1
