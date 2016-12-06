@@ -217,7 +217,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     generation = 0
     counter = 1
-    N = 3 -- Matrix rows -
+    N = 15 -- Matrix rows -
     population = createpopulation(N) -- create the matrix
 
     baseHandle=simGetObjectHandle('hexa_base') -- get pointer to the base
@@ -372,7 +372,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       save_gen_csv(population, generation)
       fitness_sum = fitness_stats(population)
 
-      if generation > 2 then
+      if generation >= 200 then
         finish_and_close(population)
       else
         children = {}
