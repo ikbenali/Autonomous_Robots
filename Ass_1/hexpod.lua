@@ -119,7 +119,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
 		--group 2: 
 		--calculate max value group 2
-		groep2Threshold = individualGroupChance[0] + [1]
+		groep2Threshold = individualGroupChance[0] + individualGroupChance[1]
 		elseif(randomNumber > individualGroupChance[0] and randomNumber < groep2Threshold ) then
 			return rouletteTable[1]
 
