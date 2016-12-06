@@ -65,12 +65,12 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
   -- Save a generations data to a csv file
   function save_gen_csv(population, gen)
-    file = io.open("gen.csv", "w+")
+    local file = assert(io.open('/Users/aliulhaq/Documents/V-REP_PRO_EDU_V3_3_2_Mac/scenes/V-Rep_Ass1/gen.txt', 'w+'))
     for key,val in pairs(population) do
       for k,v in pairs(val) do
         file:write(v .. "; ")
       end
-      file:write("\n")
+      file:write('\n')
     end
     file:close()
   end
@@ -185,8 +185,8 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
   -- Save growth data to a csv file to create graph
   function save_growth_csv(maximum, average, minimum)
-    file = io.open("growth.csv", "a+")
-    file:write(maximum .. "; " .. average .. "; " .. minimum .. "\n")
+    local file = assert(io.open('/Users/aliulhaq/Documents/Github/Autonomous_Robots/Ass_1/growth.txt', 'w+'))
+    file:write(maximum .. "; " .. average .. "; " .. minimum .. '\n')
     file:close()
   end
 
@@ -199,7 +199,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       end
     end
 
-    file = io.open("growth.csv", "a+")
+    local file = assert(io.open('/Users/aliulhaq/Documents/Github/Autonomous_Robots/Ass_1/growth.txt', 'a+'))
     file:write("Best Spider parameters;")
     file:write("step; " .. spider[2] .. ";")
     file:write("vstep; " .. spider[3] .. ";")
@@ -232,11 +232,15 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       table.insert(zMovementTable,0)
     end
 
+    population[1][2] = 0.002 -- Reset to original values
+    population[1][3] = 0.005
+    population[1][4] = 0
+
     phase=0 -- phase = movement phase (finite state machine)
     r=0 -- horizontal movement position in step
-    z=population[1][4] -- vertical movement position in step
-    step=population[1][2] -- goal (max) horizontal step size
-    vstep=population[1][3] -- goal (max) vertical step size
+    z = population[1][4] -- vertical movement position in step
+    step = population[1][2] -- goal (max) horizontal step size
+    vstep = population[1][3] -- goal (max) vertical step size
     rearExtent = -0.04
     cnt=0 -- expired simulation time
     c=8
