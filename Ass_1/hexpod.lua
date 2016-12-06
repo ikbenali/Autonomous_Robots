@@ -92,9 +92,9 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		fitness_max = 0
 		fitness_sum = 0
 		--rouletteTable = { {},{},{},{} }
-		
+
 		--get min,sum,max
-		for i = 0, #population do
+		for i = 0, #population-1 do
 			if population[i][6] < fitness_min then
 				fitness_min = population[i][6]
 			end
@@ -131,11 +131,14 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 	
 	--Select Parents
 	function getParent(population, fitness_sum)
-		random_val = math.random * fitness_sum
-		prev = 0
+		random_val = math.random() * fitness_sum
+		prev = 0.0
 		
-		for val in population do
-			if prev <= random_val <= prev + val[6] then
+		for key,val in pairs(population) do
+			if prev == nil or random_val == nil or val[6] == nil then
+				io.write(prev .. "\n" .. random_val .. "\n" .. val[6] .. "\n----------------------\n")
+			end
+			if prev <= random_val and random_val <= (prev + val[6]) then
 				return val
 			else
 				prev = prev + val[6]
@@ -199,17 +202,17 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		mutationChance = randomFloat(0, 1)
 		if mutationChance <= 0.001 then
 			parent = getParent(population, fitness_sum)
-			child = mutation(population[parent], population)		
+			child = mutation(parent, population)		
 		else
 			parent1 = getParent(population, fitness_sum)
-            parent2 = 0
+            parent2 = {}
 			repeat
 				parent2 = getParent(population, fitness_sum)
 			until(parent1 ~= parent2)
-			child = crossover(population[parent1], population[parent2], generation, population)
+			child = crossover(parent1, parent2, generation, population)
 		end
 		
-		table.insert(population, child)
+		return child
 	end
 	
 	function crossover(parent1, parent2, generation, population)
@@ -223,7 +226,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 	function interpolation(parent1, parent2, population)
 		child = {}
 		-- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
-		child[0] = #population + 1
+		child[0] = #population
 		alpha = randomFloat(0,1)
 		beta = (alpha * parent1[6]) / (alpha * parent1[6] + (1 - alpha) * parent2[6])
 
@@ -235,7 +238,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
 	function extrapolation(parent1, parent2, population)
 		child = {}
-		child[0] = #population + 1
+		child[0] = #population
 		-- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
 
 		alpha = randomFloat(0,1)
@@ -254,7 +257,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 	
 	function mutation(person, population)
 		child = {}
-		child[0] = #population + 1
+		child[0] = #population
 		for i = 1, 3 do
 			child[i] = person[i] + randomFloat(0 , 0.0001)
 		end
@@ -262,9 +265,27 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 	
 	-- Save growth data to a csv file to create graph
 	function save_growth_csv(maximum, average, minimum)
-		file = io.open("growth.csv", "w+")
+		file = io.open("growth.csv", "a+")
 		file:write(maximum .. "; " .. average .. "; " .. minimum .. "\n")
 		file:close()
+	end
+	
+	-- After 200 generations save the best individual and shut down.
+	function finish_and_close(population)
+		spider = {0,0,0,0,0,0,0}
+		for k,v in population do
+			if v[7] > spider[7] then
+				spider = v
+			end
+		end
+	
+		file = io.open("growth.csv", "a+")
+		file:write("Best Spider parameters;")
+		file:write("step; " .. spider[1] .. ";")
+		file:write("vstep; " .. spider[2] .. ";")
+		file:write("rearExtent; " .. spider[3] .. ";")
+		file:close()
+		
 	end
 	
 -- This hexapod model demonstrates distributed control, where each leg is controlled by its own script
@@ -275,7 +296,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
 		generation = 0
 		counter = 0
-		N = 1								-- Matrix rows  -
+		N = 2								-- Matrix rows  -
 		population = createpopulation(N)	-- create the matrix
 
         baseHandle=simGetObjectHandle('hexa_base')    -- get pointer to the base
@@ -420,15 +441,27 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 				child=simGetObjectChild(h,ind)
 			end
 		end
-
+		
 		if (counter == N) then
+			save_gen_csv(population, generation)
 			fitness_sum = fitness_stats(population)
 		
-			while #population < N do
-				add_to_population(population, fitness_sum)
+			if generation == 200 then
+				finish_and_close(population)
+			else
+				childeren = {}
+				io.write("population " .. #population .. "\n Childeren " .. #childeren .."\n----------------------\n")
+				i = 0
+				while #childeren < N do
+					childeren[i] = add_to_population(population, fitness_sum)
+					i = i +1
+				end
+				io.write("population " .. #population .. "\n Childeren " .. #childeren .."\n----------------------\n")
+				population = childeren
+				io.write("population " .. #population .. "\n Childeren " .. #childeren .."\n----------------------\n")
+				
 			end
-
-			save_gen_csv(population, generation)
+			
 			counter = 0
 			generation = generation + 1
 		else
