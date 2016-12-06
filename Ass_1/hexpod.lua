@@ -91,67 +91,13 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		chance = fit / sum
 		return chance
 	end
-	
-	--Select parentgroup
-function selectParent(rouletteTable, fitness_sum)
-	
-		individualGroupSum = {}
-		individualGroupChance = {}
-		parentGroup = {}
-		indexGroup = {}
-	--calculate sum individual groups
-	for i=0, 4, 1 do
-		for j=0, #rouletteTable[i] do
-			individualGroupSum[i] = individualGroupSum[i] + rouletteTable[i][j]
-		end
-	end 
 
-
-	--calculate ratio for each group 
-	for i = 0, 4, 1 do
-		individualGroupChance[i] = individualGroupSum[i]/fitness_sum 
-	end
-	--Select individual to add to the parentGroup
-	for i=0, N do
-	randomNumber = math.randomFloat(0, 1)
-	
-	--group 1: 
-	if(randomNumber > 0 and randomNumber < individualGroupChance[0] ) then
-		indexGroup = rouletteTable[0][j]
-		--add random to the parentgroup
-		parentGroup[i] = rouletteTable[0][indexGroup[ math.random( #indexGroup )] ]
-		--TODO: remove the individual from the indexGroup(prevent adding the same individual to the parent group)?
-		
-	--group 2: 
-	groep2Threshold = individualGroupChance[0] + individualGroupChance[1]
-	elseif(randomNumber > individualGroupChance[0] and randomNumber < groep2Threshold ) then
-		indexGroup = rouletteTable[1][j]
-		--add random to the parentgroup
-		parentGroup[i] = rouletteTable[1][indexGroup[ math.random( #indexGroup )] ]
-		
-	--group 3: 
-	groep3Threshold = groep2Threshold + individualGroupChance[2]
-	elseif(randomNumber > groep2Threshold and randomNumber < groep3Threshold ) then
-		indexGroup = rouletteTable[2][j]
-		--add random to the parentgroup
-		parentGroup[i] = rouletteTable[2][indexGroup[ math.random( #indexGroup )] ]
-		else 
-			indexGroup = rouletteTable[3][j]
-			--add random to the parentgroup
-			parentGroup[i] = rouletteTable[3][indexGroup[ math.random( #indexGroup )] ]
-		end
-
-	end
-	
-	return parentGroup
-
-end
-    function rouletteselection(population)
+    function fitnes_stats(population)
 		-- determine fitness of pool
 		fitness_min = 200
 		fitness_max = 0
 		fitness_sum = 0
-		rouletteTable = { {},{},{},{} }
+		--rouletteTable = { {},{},{},{} }
 		
 		--get min,sum,max
 		for i = 0, #population do
@@ -168,7 +114,9 @@ end
 		
 		fitness_average = fitness_sum / N
 		save_growth_csv(fitness_max, fitness_average, fitness_min)
+		return fitness_sum
 		
+		--[[
 		j = 0
 		for i=0, #population do
 			chance = getChance(population[i][6], fitness_sum)
@@ -183,36 +131,102 @@ end
 			end
 			j = j + 1
 		end
-		
-		parentPopulation = selectParentPopulation(rouletteTable, fitness_sum)
-		return parentPopulation
+				
+		return rouletteTable, fitness_sum]]
 	end
 	
-	function add_to_population(population)
-		--TODO: Choose random parents and choose mutation or crossover
-		if true then
-			parent1 = math.random() * (#population - 1)
-			parent2 = repeat
-				math.random() * (#population - 1)
-			until(parent1 ~= parent2)
-			child = crossover(population[parent1], population[parent2], population)
+	--Select Parents
+	function getParent(population, fitness_sum)
+		random_val = math.random * fitness_sum
+		prev = 0
+		
+		for val in population do
+			if prev <= random_val <= prev + val[6] then
+				return val
+			else
+				prev = prev + val[6]
+			end
+		end
+	
+		--[[
+		individualGroupSum = {}
+		individualGroupChance = {}
+		parentGroup = {}
+		indexGroup = {}
+		
+		--calculate sum individual groups
+		for i=0, 4, 1 do
+			for j=0, #rouletteTable[i] do
+				individualGroupSum[i] = individualGroupSum[i] + rouletteTable[i][j]
+			end
+		end 
+
+		--calculate ratio for each group 
+		for i = 0, 4, 1 do
+			individualGroupChance[i] = individualGroupSum[i]/fitness_sum 
+		end
+		
+		--Select individual to add to the parentGroup
+		for i=0, N do
+			randomNumber = math.randomFloat(0, 1)
+
+			--group 1: 
+			if(randomNumber > 0 and randomNumber < individualGroupChance[0] ) then
+				indexGroup = rouletteTable[0][j]
+				--add random to the parentgroup
+				parentGroup[i] = rouletteTable[0][indexGroup[ math.random( #indexGroup )] ]
+				--TODO: remove the individual from the indexGroup(prevent adding the same individual to the parent group)?
+
+				--group 2: 
+				groep2Threshold = individualGroupChance[0] + individualGroupChance[1]
+			elseif(randomNumber > individualGroupChance[0] and randomNumber < groep2Threshold ) then
+				indexGroup = rouletteTable[1][j]
+				--add random to the parentgroup
+				parentGroup[i] = rouletteTable[1][indexGroup[ math.random( #indexGroup )] ]
+
+				--group 3: 
+				groep3Threshold = groep2Threshold + individualGroupChance[2]
+			elseif(randomNumber > groep2Threshold and randomNumber < groep3Threshold ) then
+				indexGroup = rouletteTable[2][j]
+				--add random to the parentgroup
+				parentGroup[i] = rouletteTable[2][indexGroup[ math.random( #indexGroup )] ]
+			else 
+				indexGroup = rouletteTable[3][j]
+				--add random to the parentgroup
+				parentGroup[i] = rouletteTable[3][indexGroup[ math.random( #indexGroup )] ]
+			end
+		end
+
+		return parent--]]
+	end		
+		
+	function add_to_population(population, fitnes_sum)
+	
+		mutationChance = randomFloat(0, 1)
+		if mutationChance <= 0.001 then
+			parent = getParent(population, fitness_sum)
+			child = mutation(population[parent])		
 		else
-			rand = math.random() * (#population - 1, population)
-			child = mutation(population[rand])
+			parent1 = getParent(population, fitness_sum)
+            parent2 = 0
+			repeat
+				parent2 = getParent(population, fitness_sum)
+			until(parent1 ~= parent2)
+			child = crossover(population[parent1], population[parent2])
 		end
 		
 		table.insert(population, child)
 	end
 	
-	function crossover(parent1, parent2, population)
+	function crossover(parent1, parent2, genenration)
 		if genenration % 2 == 0 then
-			return interpolation(parent1, parent2, population)
+			return interpolation(parent1, parent2)
 		else
-			return extrapolation(parent1, parent2, population)
+			return extrapolation(parent1, parent2)
 		end
 	end
 	
-	function interpolation(parent1, parent2, population)
+	function interpolation(parent1, parent2)
 		child = {}
 		-- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
 		child[0] = #population + 1
@@ -225,7 +239,7 @@ end
 		return child
 	end
 
-	function extrapolation(parent1, parent2, population)
+	function extrapolation(parent1, parent2)
 		child = {}
 		child[0] = #population + 1
 		-- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
@@ -244,12 +258,11 @@ end
 		return child
 	end	
 	
-	--TODO: Klopt dit??
-	function mutation(person, population)
+	function mutation(person)
 		child = {}
 		child[0] = #population + 1
 		for i = 1, 3 do
-			child[i] = person[i] + randomFloat(-0.0001 , 0.0001)
+			child[i] = person[i] + randomFloat(0 , 0.0001)
 		end
 	end
 	
@@ -385,7 +398,7 @@ end
 
     -- **********************************************************************
 
-	if (cnt>=20) then -- or xdist has reached final
+	if (cnt>=10 or simGetObjectPosition(h,-1)[1] == 7) then 
 
 		xdist = simGetObjectPosition(h,-1)[1]
 		finish_time = cnt
@@ -412,9 +425,10 @@ end
 		end
 
 		if (counter == N) then
-			population = rouletteselection(population)
+			fitness_sum = fitnes_stats()
+		
 			while #population < N do
-				add_to_population(population)
+				add_to_population(population, fitnes_sum)
 			end
 
 			save_gen_csv(population, genenration)
@@ -427,8 +441,9 @@ end
 			rearExtent= population[counter][3]
 			population[counter][4] = xdist
 			population[counter][5] = finish_time
-			population[counter][6] = fittness_test(xdist, time)
+			population[counter][6] = fitness_test(xdist, finish_time)
 			counter = counter + 1
+            io.write("values: " .. step .. ", " .. vstep .. ", " .. population[counter][6])
 		end
 	end
 	-- END RESTORE
