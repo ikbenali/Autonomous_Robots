@@ -36,7 +36,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       population[i][1] = i
       population[i][2] = randomFloat(0.001,0.01)
       population[i][3] = randomFloat(0.001,0.01)
-      population[i][4] = - randomFloat(0,0.1)
+      population[i][4] = - randomFloat(0,0.05)
       population[i][5] = 0
       population[i][6] = 0
       population[i][7] = 0
@@ -80,7 +80,6 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     fitness_min = 200
     fitness_max = 0
     fitness_sum = 0
-    --rouletteTable = { {},{},{},{} }
 
     --get min,sum,max
     for i = 1, #population do
@@ -115,7 +114,6 @@ if (sim_call_type==sim_childscriptcall_actuation) then
         prev = prev + val[7]
       end
     end
-
   end
 
   function add_to_population(population, fitness_sum)
@@ -146,7 +144,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
   end
 
   function interpolation(parent1, parent2, population)
-    child = {}
+    child = {0,0,0,0,0,0,0}
     -- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
     child[1] = #population
     alpha = randomFloat(0,1)
@@ -155,14 +153,11 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     for i = 2, 4 do
       child[i] = beta * parent1[i] + (1-beta) * parent2[i]
     end
-    child[5] = 0
-    child[6] = 0
-    child[7] = 0
     return child
   end
 
   function extrapolation(parent1, parent2, population)
-    child = {}
+    child = {0,0,0,0,0,0,0}
     child[1] = #population
     -- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
 
@@ -176,21 +171,16 @@ if (sim_call_type==sim_childscriptcall_actuation) then
         child[i] = parent1[i] + (beta-1) * parent2[i] * (parent2[i] - parent1[i])
       end
     end
-    child[5] = 0
-    child[6] = 0
-    child[7] = 0
     return child
   end
 
   function mutation(person, population)
-    child = {}
+    child = {0,0,0,0,0,0,0}
     child[1] = #population
     for i = 2, 4 do
       child[i] = person[i] + randomFloat(0 , 0.0001)
     end
-    child[5] = 0
-    child[6] = 0
-    child[7] = 0
+	return child
   end
 
   -- Save growth data to a csv file to create graph
@@ -203,7 +193,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
   -- After 200 generations save the best individual and shut down.
   function finish_and_close(population)
     spider = {0,0,0,0,0,0,0}
-    for k,v in population do
+    for k,v in pairs(population) do
       if v[7] > spider[7] then
         spider = v
       end
@@ -216,6 +206,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     file:write("rearExtent; " .. spider[4] .. ";")
     file:close()
 
+	simStopSimulation();
   end
 
   -- This hexapod model demonstrates distributed control, where each leg is controlled by its own script
@@ -226,7 +217,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     generation = 0
     counter = 1
-    N = 15 -- Matrix rows -
+    N = 3 -- Matrix rows -
     population = createpopulation(N) -- create the matrix
 
     baseHandle=simGetObjectHandle('hexa_base') -- get pointer to the base
@@ -377,7 +368,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       save_gen_csv(population, generation)
       fitness_sum = fitness_stats(population)
 
-      if generation == 200 then
+      if generation > 2 then
         finish_and_close(population)
       else
         children = {}
