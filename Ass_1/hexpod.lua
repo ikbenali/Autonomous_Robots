@@ -23,12 +23,6 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 -- Genetic Algorithm
 -- ************************************************************************
 
-	-- ******************
-	-- global variabeles
-	genenration = 0
-	counter = 0
-	N = 10				-- Matrix rows  -
-
     function randomFloat(lower, upper)
         return lower + math.random()  * (upper - lower);
     end
@@ -57,7 +51,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 	end
 
 	-- Returns fitness within 0-200
-	function fittness_test(finish_time, distance)	
+	function fitness_test(finish_time, distance)	
 		if distance == 7 then
 			return 100 + fitness_speed(finish_time)
 		end
@@ -76,23 +70,23 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 	
 	-- Save a generations data to a csv file
 	function save_gen_csv(population, gen)
-		file = io.open("gen_" .. gen .. ".csv", "w+")
-		for val in population do
-			for v in val do
+		file = io.open("gen.csv", "w+")
+		for key,val in pairs(population) do
+			for k,v in pairs(val) do
 				file:write(v .. "; ")
 			end
 			file:write("\n")
 		end
-		file.close()
+		file:close()
 	end
 	
-	-- Calculate the 
+	--[[Calculate the 
 	function getChance(fit, sum)
 		chance = fit / sum
 		return chance
-	end
+	end]]
 
-    function fitnes_stats(population)
+    function fitness_stats(population)
 		-- determine fitness of pool
 		fitness_min = 200
 		fitness_max = 0
@@ -200,33 +194,33 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		return parent--]]
 	end		
 		
-	function add_to_population(population, fitnes_sum)
+	function add_to_population(population, fitness_sum)
 	
 		mutationChance = randomFloat(0, 1)
 		if mutationChance <= 0.001 then
 			parent = getParent(population, fitness_sum)
-			child = mutation(population[parent])		
+			child = mutation(population[parent], population)		
 		else
 			parent1 = getParent(population, fitness_sum)
             parent2 = 0
 			repeat
 				parent2 = getParent(population, fitness_sum)
 			until(parent1 ~= parent2)
-			child = crossover(population[parent1], population[parent2])
+			child = crossover(population[parent1], population[parent2], generation, population)
 		end
 		
 		table.insert(population, child)
 	end
 	
-	function crossover(parent1, parent2, genenration)
-		if genenration % 2 == 0 then
-			return interpolation(parent1, parent2)
+	function crossover(parent1, parent2, generation, population)
+		if generation % 2 == 0 then
+			return interpolation(parent1, parent2, population)
 		else
-			return extrapolation(parent1, parent2)
+			return extrapolation(parent1, parent2, population)
 		end
 	end
 	
-	function interpolation(parent1, parent2)
+	function interpolation(parent1, parent2, population)
 		child = {}
 		-- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
 		child[0] = #population + 1
@@ -239,7 +233,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		return child
 	end
 
-	function extrapolation(parent1, parent2)
+	function extrapolation(parent1, parent2, population)
 		child = {}
 		child[0] = #population + 1
 		-- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
@@ -258,7 +252,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		return child
 	end	
 	
-	function mutation(person)
+	function mutation(person, population)
 		child = {}
 		child[0] = #population + 1
 		for i = 1, 3 do
@@ -269,8 +263,8 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 	-- Save growth data to a csv file to create graph
 	function save_growth_csv(maximum, average, minimum)
 		file = io.open("growth.csv", "w+")
-		file:write(maximum .. "; " .. average .. "; " .. minimum "\n")
-		file.close()
+		file:write(maximum .. "; " .. average .. "; " .. minimum .. "\n")
+		file:close()
 	end
 	
 -- This hexapod model demonstrates distributed control, where each leg is controlled by its own script
@@ -279,7 +273,10 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     -- This is the initialization (only executed once)
     if (simGetScriptExecutionCount()==0) then
 
-		population = createpopulation(N)                     -- create the matrix
+		generation = 0
+		counter = 0
+		N = 1								-- Matrix rows  -
+		population = createpopulation(N)	-- create the matrix
 
         baseHandle=simGetObjectHandle('hexa_base')    -- get pointer to the base
         interModuleDelay=4                          -- each leg has a delay of 4 entries in the movement table (offset in sliding window)
@@ -425,15 +422,15 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		end
 
 		if (counter == N) then
-			fitness_sum = fitnes_stats()
+			fitness_sum = fitness_stats(population)
 		
 			while #population < N do
-				add_to_population(population, fitnes_sum)
+				add_to_population(population, fitness_sum)
 			end
 
-			save_gen_csv(population, genenration)
+			save_gen_csv(population, generation)
 			counter = 0
-			genenration = genenration + 1
+			generation = generation + 1
 		else
 			cnt = 0
 			step = population[counter][1]
@@ -443,7 +440,6 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 			population[counter][5] = finish_time
 			population[counter][6] = fitness_test(xdist, finish_time)
 			counter = counter + 1
-            io.write("values: " .. step .. ", " .. vstep .. ", " .. population[counter][6])
 		end
 	end
 	-- END RESTORE
