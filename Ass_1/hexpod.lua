@@ -112,8 +112,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 			fitness_sum = fitness_sum + population[i][6]
 		end
 		
-		fitness_average = fitness_average / N
-
+		fitness_average = fitness_sum / N
 		save_growth_csv(fitness_max, fitness_average, fitness_min)
 		
 		j = 0
