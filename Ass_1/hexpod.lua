@@ -92,48 +92,60 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		return chance
 	end
 	
-		--Select parentgroup
-	function selectParent(rouletteTable, fitness_sum)
+	--Select parentgroup
+function selectParent(rouletteTable, fitness_sum)
 	
 		individualGroupSum = {}
 		individualGroupChance = {}
-		--calculate sum individual groups
-		for i=0, 4, 1 do
-			for j=0, #rouletteTable[i] do
-				individualGroupSum[i] = individualGroupSum[i] + rouletteTable[i][j]
-			end
-		end 
+		parentGroup = {}
+		indexGroup = {}
+	--calculate sum individual groups
+	for i=0, 4, 1 do
+		for j=0, #rouletteTable[i] do
+			individualGroupSum[i] = individualGroupSum[i] + rouletteTable[i][j]
+		end
+	end 
 
 
-		--calculate ratio for each group 
-		for i = 0, 4, 1 do
-			individualGroupChance[i] = individualGroupSum[i]/fitness_sum 
+	--calculate ratio for each group 
+	for i = 0, 4, 1 do
+		individualGroupChance[i] = individualGroupSum[i]/fitness_sum 
+	end
+	--Select individual to add to the parentGroup
+	for i=0, N do
+	randomNumber = math.randomFloat(0, 1)
+	
+	--group 1: 
+	if(randomNumber > 0 and randomNumber < individualGroupChance[0] ) then
+		indexGroup = rouletteTable[0][j]
+		--add random to the parentgroup
+		parentGroup[i] = rouletteTable[0][indexGroup[ math.random( #indexGroup )] ]
+		--TODO: remove the individual from the indexGroup(prevent adding the same individual to the parent group)?
+		
+	--group 2: 
+	groep2Threshold = individualGroupChance[0] + individualGroupChance[1]
+	elseif(randomNumber > individualGroupChance[0] and randomNumber < groep2Threshold ) then
+		indexGroup = rouletteTable[1][j]
+		--add random to the parentgroup
+		parentGroup[i] = rouletteTable[1][indexGroup[ math.random( #indexGroup )] ]
+		
+	--group 3: 
+	groep3Threshold = groep2Threshold + individualGroupChance[2]
+	elseif(randomNumber > groep2Threshold and randomNumber < groep3Threshold ) then
+		indexGroup = rouletteTable[2][j]
+		--add random to the parentgroup
+		parentGroup[i] = rouletteTable[2][indexGroup[ math.random( #indexGroup )] ]
+		else 
+			indexGroup = rouletteTable[3][j]
+			--add random to the parentgroup
+			parentGroup[i] = rouletteTable[3][indexGroup[ math.random( #indexGroup )] ]
 		end
 
-
-		randomNumber = math.randomFloat(0, 1);
-		--group 1: 
-		if(randomNumber > 0 and randomNumber < individualGroupChance[0] ) then
-			return rouletteTable[0]
-
-
-		--group 2: 
-		--calculate max value group 2
-		groep2Threshold = individualGroupChance[0] + individualGroupChance[1]
-		elseif(randomNumber > individualGroupChance[0] and randomNumber < groep2Threshold ) then
-			return rouletteTable[1]
-
-
-		--group 3: 
-		groep3Threshold = groep2Threshold + individualGroupChance[2]
-		elseif(randomNumber > groep2Threshold and randomNumber < groep3Threshold ) then
-			return rouletteTable[2]
-
-		else 
-			return rouletteTable[3]
-			end
 	end
+	
+	return parentGroup
 
+end
     function rouletteselection(population)
 		-- determine fitness of pool
 		fitness_min = 200
