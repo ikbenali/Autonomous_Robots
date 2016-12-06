@@ -65,7 +65,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
   -- Save a generations data to a csv file
   function save_gen_csv(population, gen)
-    local file = assert(io.open('/Users/aliulhaq/Documents/V-REP_PRO_EDU_V3_3_2_Mac/scenes/V-Rep_Ass1/gen.txt', 'w+'))
+    local file = assert(io.open('/Users/aliulhaq/Documents/V-REP_PRO_EDU_V3_3_2_Mac/scenes/V-Rep_Ass1/gen_' .. gen .. '.txt', 'w+'))
     for key,val in pairs(population) do
       for k,v in pairs(val) do
         file:write(v .. "; ")
