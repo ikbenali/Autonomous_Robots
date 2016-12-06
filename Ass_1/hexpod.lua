@@ -92,6 +92,48 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 		return chance
 	end
 	
+		--Select parentgroup
+	function selectParent(rouletteTable, fitness_sum)
+	
+		individualGroupSum = {}
+		individualGroupChance = {}
+		--calculate sum individual groups
+		for i=0, 4, 1 do
+			for j=0, #rouletteTable[i] do
+				individualGroupSum[i] = individualGroupSum[i] + rouletteTable[i][j]
+			end
+		end 
+
+
+		--calculate ratio for each group 
+		for i = 0, 4, 1 do
+			individualGroupChance[i] = individualGroupSum[i]/fitness_sum 
+		end
+
+
+		randomNumber = math.randomFloat(0, 1);
+		--group 1: 
+		if(randomNumber > 0 and randomNumber < individualGroupChance[0] ) then
+			return rouletteTable[0]
+
+
+		--group 2: 
+		--calculate max value group 2
+		groep2Threshold = individualGroupChance[0] + [1]
+		elseif(randomNumber > individualGroupChance[0] and randomNumber < groep2Threshold ) then
+			return rouletteTable[1]
+
+
+		--group 3: 
+		groep3Threshold = groep2Threshold + individualGroupChance[2]
+		elseif(randomNumber > groep2Threshold and randomNumber < groep3Threshold ) then
+			return rouletteTable[2]
+
+		else 
+			return rouletteTable[3]
+			end
+	end
+
     function rouletteselection(population)
 		-- determine fitness of pool
 		fitness_min = 200
@@ -130,9 +172,9 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 			j = j + 1
 		end
 		
-		--TODO: choosing part and droping other population
-		
-		return population
+		parentPopulation = selectParentPopulation(rouletteTable, fitness_sum)
+
+		return parentPopulation
 	end
 	
 	function add_to_population(population)
