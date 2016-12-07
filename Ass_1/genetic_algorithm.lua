@@ -46,9 +46,9 @@ if (sim_call_type==sim_childscriptcall_actuation) then
   end
 
   function print_population(population)
-
+    print("This was the population: \n")
     for key,val in pairs(population) do
-      print("This was the population: \n",val[1],val[2],val[3],val[4],val[5],val[6],val[7])
+      print(val[1],val[2],val[3],val[4],val[5],val[6],val[7],"\n")
     end
   end
 
@@ -137,7 +137,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       repeat
         parent2 = getParent(population, fitness_sum)
       until(parent1 ~= parent2)
-      print("The chosen parents are with fitness:",parent1[7],parent2[7])
+      print("The chosen parents are with fitness:",parent1[7],parent2[7], "\n")
       child = crossover(parent1, parent2, generation, population,children)
     end
 
@@ -227,7 +227,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     generation = 0
     counter = 1
-    N = 10 -- Matrix rows and population size-
+    N = 15 -- Matrix rows and population size-
     population = createpopulation(N) -- create the matrix
 
     baseHandle=simGetObjectHandle('hexa_base') -- get pointer to the base
@@ -400,11 +400,10 @@ if (sim_call_type==sim_childscriptcall_actuation) then
         i = 1
         while #children < N do
           children[i] = add_to_population(population, children,fitness_sum)
-          print("I am child No.:",children[i][1])
           i = i +1
         end
 
-        io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
+        -- io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
         population = children
         io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
       end
