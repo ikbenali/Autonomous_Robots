@@ -22,6 +22,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
   -- ************************************************************************
   -- Genetic Algorithm
   -- ************************************************************************
+  math.randomseed( os.time() )
 
   function randomFloat(lower, upper)
     return lower + math.random() * (upper - lower);
@@ -72,7 +73,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
   -- Save a generations data to a csv file
   function save_gen_csv(population, gen)
-    local file = assert(io.open('C:\\Users\\enes\\Desktop\\Robotica\\Autonomous robots\\ass1\\gen_' .. gen .. '.txt', 'w+'))
+    local file = assert(io.open('/Users/aliulhaq/Documents/V-REP_PRO_EDU_V3_3_2_Mac/scenes/V-Rep_Ass1/gen_' .. gen .. '.txt', 'w+'))
     for key,val in pairs(population) do
       for k,v in pairs(val) do
         file:write(v .. "; ")
@@ -112,11 +113,8 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     prev = 0.0
 
     for key,val in pairs(population) do
-      --[[if prev == nil or random_val == nil or val[7] == nil then
-      io.write(prev .. "\n" .. random_val .. "\n" .. val[7] .. "\n----------------------\n")
-      end]]
       if prev <= random_val and random_val <= (prev + val[7]) then
-        if val[7] > 0 then
+        if (val[7] > 0 ) then
           return val
         else
           prev = prev + val[7]
@@ -127,46 +125,37 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     end
   end
 
-  function get_best_parent(population)
-    fittest = {0,0,0,0,0,0,0}
-    for k,v in pairs(population) do
-      if v[7] > fittest[7] then
-        fittest = v
-      end
-    end
-
-    return fittest
-  end
-
-  function add_to_population(population, fitness_sum)
+  function add_to_population(population,children, fitness_sum)
 
     mutationChance = randomFloat(0, 1)
     if mutationChance <= 0.001 then
       parent = getParent(population, fitness_sum)
-      child = mutation(parent, population)
+      child = mutation(parent, population,children)
     else
       parent1 = getParent(population, fitness_sum)
       parent2 = {}
       repeat
         parent2 = getParent(population, fitness_sum)
       until(parent1 ~= parent2)
-      child = crossover(parent1, parent2, generation, population)
+      print("The chosen parents are with fitness:",parent1[7],parent2[7], "\n")
+      child = crossover(parent1, parent2, generation, population,children)
     end
+
     return child
   end
 
-  function crossover(parent1, parent2, generation, population)
+  function crossover(parent1, parent2, generation, population,children)
     if generation % 2 == 0 then
-      return interpolation(parent1, parent2, population)
+      return interpolation(parent1, parent2, population,children)
     else
-      return extrapolation(parent1, parent2, population)
+      return extrapolation(parent1, parent2, population,children)
     end
   end
 
-  function interpolation(parent1, parent2, population)
+  function interpolation(parent1, parent2, population,children)
     child = {0,0,0,0,0,0,0}
     -- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
-    child[1] = #population
+    child[1] = #children + 1
     alpha = randomFloat(0,1)
     beta = (alpha * parent1[7]) / (alpha * parent1[7] + (1 - alpha) * parent2[7])
 
@@ -177,9 +166,9 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     return child
   end
 
-  function extrapolation(parent1, parent2, population)
+  function extrapolation(parent1, parent2, population,children)
     child = {0,0,0,0,0,0,0}
-    child[1] = #population
+    child[1] = #children + 1
     -- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
 
     alpha = randomFloat(0,1)
@@ -195,9 +184,9 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     return child
   end
 
-  function mutation(person, population)
+  function mutation(person, population,children)
     child = {0,0,0,0,0,0,0}
-    child[1] = #population
+    child[1] = #children + 1
     for i = 2, 4 do
       child[i] = person[i] + randomFloat(0 , 0.0001)
     end
@@ -206,7 +195,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
   -- Save growth data to a csv file to create graph
   function save_growth_csv(maximum, average, minimum)
-    local file = assert(io.open('C:\\Users\\enes\\Desktop\\Robotica\\Autonomous robots\\ass1\\growth.txt', 'a+'))
+    local file = assert(io.open('/Users/aliulhaq/Documents/Github/Autonomous_Robots/Ass_1/growth.txt', 'a+'))
     file:write(maximum .. "; " .. average .. "; " .. minimum .. '\n')
     file:close()
   end
@@ -220,7 +209,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       end
     end
 
-    local file = assert(io.open('C:\\Users\\enes\\Desktop\\Robotica\\Autonomous robots\\ass1\\growth.txt', 'a+'))
+    local file = assert(io.open('/Users/aliulhaq/Documents/Github/Autonomous_Robots/Ass_1/growth.txt', 'a+'))
     file:write("Best Spider parameters;")
     file:write("step; " .. spider[2] .. ";")
     file:write("vstep; " .. spider[3] .. ";")
@@ -238,7 +227,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     generation = 0
     counter = 1
-    N = 15 -- Matrix rows -
+    N = 15 -- Matrix rows and population size-
     population = createpopulation(N) -- create the matrix
 
     baseHandle=simGetObjectHandle('hexa_base') -- get pointer to the base
@@ -408,23 +397,21 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       else
         children = {}
         io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
-
-        -- Add best parent
-        children[1] = get_best_parent(population)
-
-        -- Make childs
-        i = 2
-        while #children <= N do
-          children[i] = add_to_population(population, fitness_sum)
+        i = 1
+        while #children < N do
+          children[i] = add_to_population(population, children,fitness_sum)
           i = i +1
         end
-        -- Make population of the new children
+
+        -- io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
         population = children
         io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
       end
+
       counter = 1
       generation = generation + 1
-      print("The next generation is:", generation, "\n")
+      print("The next generation is:",generation)
+
     end
   end
   -- END RESTORE
