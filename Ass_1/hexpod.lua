@@ -48,19 +48,19 @@ if (sim_call_type==sim_childscriptcall_actuation) then
   function fitness_test(finish_time, distance)
     if distance == 7 then
       return 100 + fitness_speed(finish_time)
+    else
+      return fitness_distance(distance)
     end
-
-    return fitness_distance(distance)
   end
 
   -- Returns fitness for time spend
   function fitness_speed(finish_time)
-    return (finish_time / 20) * 100
+    return (finish_time / 20.0) * 100.0
   end
 
   -- Returns fitness for distance cleared
   function fitness_distance(distance)
-    return (distance / 7) * 100
+    return (distance / 7.0) * 100.0
   end
 
   -- Save a generations data to a csv file
@@ -105,9 +105,9 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     prev = 0.0
 
     for key,val in pairs(population) do
-      if prev == nil or random_val == nil or val[7] == nil then
-        io.write(prev .. "\n" .. random_val .. "\n" .. val[7] .. "\n----------------------\n")
-      end
+      --[[if prev == nil or random_val == nil or val[7] == nil then
+      io.write(prev .. "\n" .. random_val .. "\n" .. val[7] .. "\n----------------------\n")
+      end]]
       if prev <= random_val and random_val <= (prev + val[7]) then
         return val
       else
@@ -128,7 +128,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       repeat
         parent2 = getParent(population, fitness_sum)
       until(parent1 ~= parent2)
-      print(parent1,parent2)
+      print(parent1[7],parent2[7])
       child = crossover(parent1, parent2, generation, population)
     end
 
@@ -152,7 +152,9 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     for i = 2, 4 do
       child[i] = beta * parent1[i] + (1-beta) * parent2[i]
+      print(child[i])
     end
+
     return child
   end
 
@@ -180,7 +182,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     for i = 2, 4 do
       child[i] = person[i] + randomFloat(0 , 0.0001)
     end
-	return child
+    return child
   end
 
   -- Save growth data to a csv file to create graph
@@ -206,7 +208,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     file:write("rearExtent; " .. spider[4] .. ";")
     file:close()
 
-	simStopSimulation();
+    simStopSimulation();
   end
 
   -- This hexapod model demonstrates distributed control, where each leg is controlled by its own script
@@ -342,7 +344,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
   -- **********************************************************************
 
-  if (cnt>=10 or simGetObjectPosition(h,-1)[1] == 7) then
+  if (cnt>=20 or simGetObjectPosition(h,-1)[1] == 7) then
 
     xdist = simGetObjectPosition(h,-1)[1]
     finish_time = cnt
@@ -392,15 +394,14 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     end
 
-      cnt = 0
-      population[counter][5] = xdist
-      population[counter][6] = finish_time
-      population[counter][7] = fitness_test(xdist, finish_time)
-      counter = counter + 1
-      step = population[counter][2]
-      vstep = population[counter][3]
-      z = population[counter][4]
-
+    cnt = 0
+    population[counter][5] = xdist
+    population[counter][6] = finish_time
+    population[counter][7] = fitness_test(finish_time,xdist)
+    counter = counter + 1
+    step = population[counter][2]
+    vstep = population[counter][3]
+    z = population[counter][4]
   end
   -- END RESTORE
 
