@@ -65,7 +65,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
   -- Save a generations data to a csv file
   function save_gen_csv(population, gen)
-    local file = assert(io.open('/Users/aliulhaq/Documents/V-REP_PRO_EDU_V3_3_2_Mac/scenes/V-Rep_Ass1/gen_' .. gen .. '.txt', 'w+'))
+    local file = assert(io.open('C:\\Users\\enes\\Desktop\\Robotica\\Autonomous robots\\ass1\\gen_' .. gen .. '.txt', 'w+'))
     for key,val in pairs(population) do
       for k,v in pairs(val) do
         file:write(v .. "; ")
@@ -115,7 +115,18 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       end
     end
   end
+  
+	function get_best_parent(population)
+		fitest = {0,0,0,0,0,0,0}
+		for k,v in pairs(population) do
+			if v[7] > fitest[7] then
+				fitest = v
+			end
+		end
 
+		return fitest
+	end
+  
   function add_to_population(population, fitness_sum)
 
     mutationChance = randomFloat(0, 1)
@@ -187,7 +198,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
   -- Save growth data to a csv file to create graph
   function save_growth_csv(maximum, average, minimum)
-    local file = assert(io.open('/Users/aliulhaq/Documents/Github/Autonomous_Robots/Ass_1/growth.txt', 'w+'))
+    local file = assert(io.open('C:\\Users\\enes\\Desktop\\Robotica\\Autonomous robots\\ass1\\growth.txt', 'a+'))
     file:write(maximum .. "; " .. average .. "; " .. minimum .. '\n')
     file:close()
   end
@@ -201,7 +212,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       end
     end
 
-    local file = assert(io.open('/Users/aliulhaq/Documents/Github/Autonomous_Robots/Ass_1/growth.txt', 'a+'))
+    local file = assert(io.open('C:\\Users\\enes\\Desktop\\Robotica\\Autonomous robots\\ass1\\growth.txt', 'a+'))
     file:write("Best Spider parameters;")
     file:write("step; " .. spider[2] .. ";")
     file:write("vstep; " .. spider[3] .. ";")
@@ -377,14 +388,19 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       if generation >= 200 then
         finish_and_close(population)
       else
-        children = {}
-        io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
-        i = 1
-        while #children < N do
+        children = {}		
+		io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
+		
+		-- Add best parent
+		children[1] = get_best_parent(population)
+
+		-- Make childs
+		i = 2
+        while #children <= N do
           children[i] = add_to_population(population, fitness_sum)
           i = i +1
         end
-        io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
+		-- Make population of the new children
         population = children
         io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
       end
