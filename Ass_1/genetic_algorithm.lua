@@ -1,5 +1,3 @@
--- Ali & Enes Eryigit
-
 ------------------------------------------------------------------------------
 -- Following few lines automatically added by V-REP to guarantee compatibility
 -- with V-REP 3.1.3 and later:
@@ -24,6 +22,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
   -- ************************************************************************
   -- Genetic Algorithm
   -- ************************************************************************
+  math.randomseed( os.time() )
 
   function randomFloat(lower, upper)
     return lower + math.random() * (upper - lower);
@@ -33,23 +32,32 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     -- Create Nx6 Matrix
     local population = {}
 
-    for i = 0, N do
+    for i = 1, N do
       population[i] = {}
-      population[i][0] = i
-      population[i][1] = randomFloat(0.001,0.01)
+      population[i][1] = i
       population[i][2] = randomFloat(0.001,0.01)
-      population[i][3] = -randomFloat(0,0.1)
-      population[i][4] = 0
+      population[i][3] = randomFloat(0.001,0.01)
+      population[i][4] = - randomFloat(0,0.04)
       population[i][5] = 0
       population[i][6] = 0
+      population[i][7] = 0
     end
-
     return population
   end
 
-  function update_person(person, finish_time, distance)
-    -- Add person's walking results to Matrix
-    return {person[0], person[1], person[2], person[3], finish_time, distance, fitness(finish_time, distance)}
+  function print_population(population)
+
+    for key,val in pairs(population) do
+      print(val[1],val[2],val[3],val[4],val[5],val[6],val[7])
+    end
+  end
+  -- Returns fitness within 0-200
+  function fitness_test(finish_time, distance)
+    if distance == 7 then
+      return 100 + fitness_speed(finish_time)
+    else
+      return fitness_distance(distance)
+    end
   end
 
   -- Returns fitness for time spend
@@ -62,23 +70,16 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     return (distance / 7.0) * 100.0
   end
 
-  -- Returns fitness within 0-200
-  function fitness_test(finish_time, distance)
-    if distance == 7 then
-      return 100 + fitness_speed(finish_time)
-    end
-
-    return fitness_distance(distance)
-  end
-
   -- Save a generations data to a csv file
   function save_gen_csv(population, gen)
---[[]    file = io.open("gen_" .. gen .. ".csv", "w+")
-    for val in population do
-      file:write(val[0] .. "; " .. val[1] .. "; " .. val[2] .. "; " .. val[3] .. "; " .. val[4] .. "; " .. val[5] .. "; " .. val[6])
-      file:write("\n")
+    local file = assert(io.open('/Users/aliulhaq/Documents/V-REP_PRO_EDU_V3_3_2_Mac/scenes/V-Rep_Ass1/gen_' .. gen .. '.txt', 'w+'))
+    for key,val in pairs(population) do
+      for k,v in pairs(val) do
+        file:write(v .. "; ")
+      end
+      file:write('\n')
     end
-    file:close() ]]
+    file:close()
   end
 
   function fitness_stats(population)
@@ -88,16 +89,16 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     fitness_sum = 0
 
     --get min,sum,max
-    for i = 0, #population do
-      if population[i][6] < fitness_min then
-        fitness_min = population[i][6]
+    for i = 1, #population do
+      if population[i][7] < fitness_min then
+        fitness_min = population[i][7]
       end
 
-      if population[i][6] > fitness_max then
-        fitness_max = population[i][6]
+      if population[i][7] > fitness_max then
+        fitness_max = population[i][7]
       end
 
-      fitness_sum = fitness_sum + population[i][6]
+      fitness_sum = fitness_sum + population[i][7]
     end
 
     fitness_average = fitness_sum / N
@@ -107,89 +108,114 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
   --Select Parents
   function getParent(population, fitness_sum)
-    random_val = math.random * fitness_sum
-    prev = 0
+    random_val = math.random() * fitness_sum
+    prev = 0.0
 
-    for val in population do
-      if prev <= random_val <= prev + val[6] then
-        return val
+    for key,val in pairs(population) do
+      if prev <= random_val and random_val <= (prev + val[7]) then
+        if (val[7] > 0 ) then
+          return val
+        else
+          prev = prev + val[7]
+        end
       else
-        prev = prev + val[6]
+        prev = prev + val[7]
       end
     end
   end
 
-  function add_to_population(population, fitness_sum)
+  function add_to_population(population,children, fitness_sum)
 
     mutationChance = randomFloat(0, 1)
     if mutationChance <= 0.001 then
       parent = getParent(population, fitness_sum)
-      child = mutation(population[parent],population)
+      child = mutation(parent, population,children)
     else
       parent1 = getParent(population, fitness_sum)
-      parent2 = 0
+      parent2 = {}
       repeat
         parent2 = getParent(population, fitness_sum)
       until(parent1 ~= parent2)
-      child = crossover(population[parent1], population[parent2],population)
+      print("The chosen parents are with fitness:",parent1[7],parent2[7])
+      child = crossover(parent1, parent2, generation, population,children)
     end
 
-    table.insert(population, child)
-  end
-
-  function crossover(parent1, parent2, generation,population)
-    if generation % 2 == 0 then
-      return interpolation(parent1, parent2,population)
-    else
-      return extrapolation(parent1, parent2,population)
-    end
-  end
-
-  function interpolation(parent1, parent2,population)
-    child = {}
-    -- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
-    child[0] = #population + 1
-    alpha = randomFloat(0,1)
-    beta = (alpha * parent1[6]) / (alpha * parent1[6] + (1 - alpha) * parent2[6])
-
-    for i = 1, 3 do
-      child[i] = beta * parent1[i] + (1-beta) * parent2[i]
-    end
     return child
   end
 
-  function extrapolation(parent1, parent2,population)
-    child = {}
-    child[0] = #population + 1
+  function crossover(parent1, parent2, generation, population,children)
+    if generation % 2 == 0 then
+      return interpolation(parent1, parent2, population,children)
+    else
+      return extrapolation(parent1, parent2, population,children)
+    end
+  end
+
+  function interpolation(parent1, parent2, population,children)
+    child = {0,0,0,0,0,0,0}
+    -- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
+    child[1] = #children
+    alpha = randomFloat(0,1)
+    beta = (alpha * parent1[7]) / (alpha * parent1[7] + (1 - alpha) * parent2[7])
+
+    for i = 2, 4 do
+      child[i] = beta * parent1[i] + (1-beta) * parent2[i]
+    end
+
+    return child
+  end
+
+  function extrapolation(parent1, parent2, population,children)
+    child = {0,0,0,0,0,0,0}
+    child[1] = #children
     -- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
 
     alpha = randomFloat(0,1)
-    beta = 2*(alpha * parent1[6]) / (alpha * parent1[6] + (1 - alpha) * parent2[6])
+    beta = 2*(alpha * parent1[7]) / (alpha * parent1[7] + (1 - alpha) * parent2[7])
 
-    for i = 1, 3 do
+    for i = 2, 4 do
       if (beta < 1) then
         child[i] = parent2[i] + ((1-beta) * parent1[i]) * (parent1[i] - parent2[i])
       else
         child[i] = parent1[i] + (beta-1) * parent2[i] * (parent2[i] - parent1[i])
       end
     end
-
     return child
   end
 
-  function mutation(person,population)
-    child = {}
-    child[0] = #population + 1
-    for i = 1, 3 do
+  function mutation(person, population,children)
+    child = {0,0,0,0,0,0,0}
+    child[1] = #children
+    for i = 2, 4 do
       child[i] = person[i] + randomFloat(0 , 0.0001)
     end
+    return child
   end
 
   -- Save growth data to a csv file to create graph
   function save_growth_csv(maximum, average, minimum)
-    file = io.open("growth.csv", "w+")
-    file:write(maximum .. "; " .. average .. "; " .. minimum .. "\n")
+    local file = assert(io.open('/Users/aliulhaq/Documents/Github/Autonomous_Robots/Ass_1/growth.txt', 'a+'))
+    file:write(maximum .. "; " .. average .. "; " .. minimum .. '\n')
     file:close()
+  end
+
+  -- After 200 generations save the best individual and shut down.
+  function finish_and_close(population)
+    spider = {0,0,0,0,0,0,0}
+    for k,v in pairs(population) do
+      if v[7] > spider[7] then
+        spider = v
+      end
+    end
+
+    local file = assert(io.open('/Users/aliulhaq/Documents/Github/Autonomous_Robots/Ass_1/growth.txt', 'a+'))
+    file:write("Best Spider parameters;")
+    file:write("step; " .. spider[2] .. ";")
+    file:write("vstep; " .. spider[3] .. ";")
+    file:write("rearExtent; " .. spider[4] .. ";")
+    file:close()
+
+    simStopSimulation();
   end
 
   -- This hexapod model demonstrates distributed control, where each leg is controlled by its own script
@@ -199,9 +225,8 @@ if (sim_call_type==sim_childscriptcall_actuation) then
   if (simGetScriptExecutionCount()==0) then
 
     generation = 0
-    counter = 0
-    N = 1 -- Matrix rows -
-
+    counter = 1
+    N = 10 -- Matrix rows and population size-
     population = createpopulation(N) -- create the matrix
 
     baseHandle=simGetObjectHandle('hexa_base') -- get pointer to the base
@@ -215,12 +240,17 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       table.insert(yMovementTable,0)
       table.insert(zMovementTable,0)
     end
+
+    population[1][2] = 0.002 -- Reset to original values
+    population[1][3] = 0.005
+    population[1][4] = 0
+
     phase=0 -- phase = movement phase (finite state machine)
     r=0 -- horizontal movement position in step
-    z=0 -- vertical movement position in step
-    step=population[0][1] -- goal (max) horizontal step size
-    vstep=population[0][2] -- goal (max) vertical step size
-    rearExtent = population[0][3]
+    z = population[1][4] -- vertical movement position in step
+    step = population[1][2] -- goal (max) horizontal step size
+    vstep = population[1][3] -- goal (max) vertical step size
+    rearExtent = -0.04
     cnt=0 -- expired simulation time
     c=8
     cm0=4
@@ -321,7 +351,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
   -- **********************************************************************
 
-  if (cnt>=10 or simGetObjectPosition(h,-1)[1] == 7) then
+  if (cnt>=20 or simGetObjectPosition(h,-1)[1] == 7) then
 
     xdist = simGetObjectPosition(h,-1)[1]
     finish_time = cnt
@@ -348,29 +378,41 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     end
 
     if (counter == N) then
+      save_gen_csv(population, generation)
       fitness_sum = fitness_stats(population)
 
-      while #population < N do
-        add_to_population(population, fitness_sum)
+      if generation >= 200 then
+        finish_and_close(population)
+      else
+        children = {}
+        io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
+        i = 1
+        while #children < N do
+          children[i] = add_to_population(population, children,fitness_sum)
+          print("I am child No.:",children[i][1])
+          i = i +1
+        end
+
+        io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
+        population = children
+        io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
       end
 
-      save_gen_csv(population, generation)
-      counter = 0
+      counter = 1
       generation = generation + 1
+      print("The next generation is:",generation)
 
-    else
-      print("I am walking yo")
-      cnt = 0
-      step = population[counter][1]
-      vstep = population[counter][2]
-      rearExtent= population[counter][3]
-      population[counter][4] = xdist
-      population[counter][5] = finish_time
-      population[counter][6] = fitness_test(xdist, finish_time)
-      print(step)
-      print(vstep)
     end
+
+    cnt = 0
+    population[counter][5] = xdist
+    population[counter][6] = finish_time
+    population[counter][7] = fitness_test(finish_time,xdist)
     counter = counter + 1
+    step = population[counter][2]
+    vstep = population[counter][3]
+    z = population[counter][4]
+    print("These may be retard spider values:",step,vstep,z)
   end
   -- END RESTORE
 
