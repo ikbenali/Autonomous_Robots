@@ -36,12 +36,19 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       population[i][1] = i
       population[i][2] = randomFloat(0.001,0.01)
       population[i][3] = randomFloat(0.001,0.01)
-      population[i][4] = - randomFloat(0,0.05)
+      population[i][4] = - randomFloat(0,0.04)
       population[i][5] = 0
       population[i][6] = 0
       population[i][7] = 0
     end
     return population
+  end
+
+  function print_population(population)
+    print("This was the population: \n")
+    for key,val in pairs(population) do
+      print(val[1],val[2],val[3],val[4],val[5],val[6],val[7],"\n")
+    end
   end
 
   -- Returns fitness within 0-200
@@ -109,24 +116,28 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       io.write(prev .. "\n" .. random_val .. "\n" .. val[7] .. "\n----------------------\n")
       end]]
       if prev <= random_val and random_val <= (prev + val[7]) then
-        return val
+        if val[7] > 0 then
+          return val
+        else
+          prev = prev + val[7]
+        end
       else
         prev = prev + val[7]
       end
     end
   end
-  
-	function get_best_parent(population)
-		fitest = {0,0,0,0,0,0,0}
-		for k,v in pairs(population) do
-			if v[7] > fitest[7] then
-				fitest = v
-			end
-		end
 
-		return fitest
-	end
-  
+  function get_best_parent(population)
+    fittest = {0,0,0,0,0,0,0}
+    for k,v in pairs(population) do
+      if v[7] > fittest[7] then
+        fittest = v
+      end
+    end
+
+    return fittest
+  end
+
   function add_to_population(population, fitness_sum)
 
     mutationChance = randomFloat(0, 1)
@@ -139,10 +150,8 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       repeat
         parent2 = getParent(population, fitness_sum)
       until(parent1 ~= parent2)
-      print(parent1[7],parent2[7])
       child = crossover(parent1, parent2, generation, population)
     end
-
     return child
   end
 
@@ -163,7 +172,6 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     for i = 2, 4 do
       child[i] = beta * parent1[i] + (1-beta) * parent2[i]
-      print(child[i])
     end
 
     return child
@@ -381,43 +389,43 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       end
     end
 
-    if (counter == N) then
+    cnt = 0
+    step = population[counter][2]
+    vstep = population[counter][3]
+    z = population[counter][4]
+    population[counter][5] = xdist
+    population[counter][6] = finish_time
+    population[counter][7] = fitness_test(finish_time,xdist)
+    counter = counter + 1
+
+    if (counter > N) then
+      print_population(population)
       save_gen_csv(population, generation)
       fitness_sum = fitness_stats(population)
 
       if generation >= 200 then
         finish_and_close(population)
       else
-        children = {}		
-		io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
-		
-		-- Add best parent
-		children[1] = get_best_parent(population)
+        children = {}
+        io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
 
-		-- Make childs
-		i = 2
+        -- Add best parent
+        children[1] = get_best_parent(population)
+
+        -- Make childs
+        i = 2
         while #children <= N do
           children[i] = add_to_population(population, fitness_sum)
           i = i +1
         end
-		-- Make population of the new children
+        -- Make population of the new children
         population = children
         io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
       end
-
       counter = 1
       generation = generation + 1
-
+      print("The next generation is:", generation, "\n")
     end
-
-    cnt = 0
-    population[counter][5] = xdist
-    population[counter][6] = finish_time
-    population[counter][7] = fitness_test(finish_time,xdist)
-    counter = counter + 1
-    step = population[counter][2]
-    vstep = population[counter][3]
-    z = population[counter][4]
   end
   -- END RESTORE
 
