@@ -124,6 +124,17 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       end
     end
   end
+  
+	function get_best_parent(population)
+		fittest = {0,0,0,0,0,0,0}
+		for k,v in pairs(population) do
+			if v[7] > fittest[7] then
+				fittest = v
+			end
+		end
+
+		return fittest
+	end
 
   function add_to_population(population,children, fitness_sum)
 
@@ -379,14 +390,15 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     end
 
     cnt = 0
-    step = population[counter][2]
-    vstep = population[counter][3]
-    z = population[counter][4]
+
     population[counter][5] = xdist
     population[counter][6] = finish_time
     population[counter][7] = fitness_test(finish_time,xdist)
     counter = counter + 1
-
+	step = population[counter][2]
+    vstep = population[counter][3]
+    z = population[counter][4]
+	
     if (counter > N) then
       print_population(population)
       save_gen_csv(population, generation)
@@ -397,7 +409,12 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       else
         children = {}
         io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
-        i = 1
+		
+		-- Add best parent
+        children[1] = get_best_parent(population)
+
+        -- Make childs
+        i = 2
         while #children < N do
           children[i] = add_to_population(population, children,fitness_sum)
           i = i +1
