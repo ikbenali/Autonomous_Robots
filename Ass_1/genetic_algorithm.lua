@@ -48,9 +48,10 @@ if (sim_call_type==sim_childscriptcall_actuation) then
   function print_population(population)
 
     for key,val in pairs(population) do
-      print(val[1],val[2],val[3],val[4],val[5],val[6],val[7])
+      print("This was the population: \n",val[1],val[2],val[3],val[4],val[5],val[6],val[7])
     end
   end
+
   -- Returns fitness within 0-200
   function fitness_test(finish_time, distance)
     if distance == 7 then
@@ -377,7 +378,17 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       end
     end
 
-    if (counter == N) then
+    cnt = 0
+    step = population[counter][2]
+    vstep = population[counter][3]
+    z = population[counter][4]
+    population[counter][5] = xdist
+    population[counter][6] = finish_time
+    population[counter][7] = fitness_test(finish_time,xdist)
+    counter = counter + 1
+
+    if (counter > N) then
+      print_population(population)
       save_gen_csv(population, generation)
       fitness_sum = fitness_stats(population)
 
@@ -403,16 +414,6 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       print("The next generation is:",generation)
 
     end
-
-    cnt = 0
-    population[counter][5] = xdist
-    population[counter][6] = finish_time
-    population[counter][7] = fitness_test(finish_time,xdist)
-    counter = counter + 1
-    step = population[counter][2]
-    vstep = population[counter][3]
-    z = population[counter][4]
-    print("These may be retard spider values:",step,vstep,z)
   end
   -- END RESTORE
 
