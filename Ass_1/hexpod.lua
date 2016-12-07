@@ -35,9 +35,9 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     for i = 1, N do
       population[i] = {}
       population[i][1] = i
-      population[i][2] = randomFloat(0.001,0.01)
-      population[i][3] = randomFloat(0.001,0.01)
-      population[i][4] = - randomFloat(0,0.03)
+      population[i][2] = 0.01
+      population[i][3] = 0.01
+      population[i][4] = 0.02
       population[i][5] = 0
       population[i][6] = 0
       population[i][7] = 0
@@ -46,7 +46,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
   end
 
   function print_population(population)
-    print("This was the population: \n")
+    print("This is the population: \n")
     for key,val in pairs(population) do
       print(val[1],val[2],val[3],val[4],val[5],val[6],val[7],"\n")
     end
@@ -134,7 +134,6 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     end
 
     fittest[1] = 1
-    print(fittest[7])
 
     return fittest
   end
@@ -171,7 +170,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     -- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
     child[1] = #children + 1
     alpha = randomFloat(0,1)
-    beta = (alpha * parent1[7]) / (alpha * parent1[7] + (1 - alpha) * parent2[7])
+    beta = (alpha * parent1[7]) / ((alpha * parent1[7]) + ((1 - alpha) * parent2[7]))
 
     for i = 2, 4 do
       child[i] = beta * parent1[i] + (1-beta) * parent2[i]
@@ -184,9 +183,8 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     child = {0,0,0,0,0,0,0}
     child[1] = #children + 1
     -- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
-
     alpha = randomFloat(0,1)
-    beta = 2*(alpha * parent1[7]) / (alpha * parent1[7] + (1 - alpha) * parent2[7])
+    beta = (2*alpha * parent1[7]) / (alpha * parent1[7] + (1 - alpha) * parent2[7])
 
     for i = 2, 4 do
       if (beta < 1) then
@@ -370,6 +368,45 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     xdist = simGetObjectPosition(h,-1)[1]
     finish_time = cnt
+    step = population[counter][2]
+    vstep = population[counter][3]
+    z = population[counter][4]
+    population[counter][5] = xdist
+    population[counter][6] = finish_time
+    population[counter][7] = fitness_test(finish_time,xdist)
+    counter = counter + 1
+
+    if (counter > N) then
+      print_population(population)
+      save_gen_csv(population, generation)
+      fitness_sum = fitness_stats(population)
+
+      if generation >= 200 then
+        finish_and_close(population)
+      else
+        children = {}
+        io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
+        -- Make childs
+        i = 1
+        while #children < N do
+          children[i] = add_to_population(population, children,fitness_sum)
+          i = i +1
+        end
+
+        -- Add best parent
+        children[1] = get_best_parent(population)
+
+        -- io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
+        population = children
+        io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
+      end
+
+      counter = 1
+      generation = generation + 1
+      print("The next generation is:",generation)
+    end
+
+    cnt = 0
 
     -- RESTORE (reset to test new individual)
     -- // reset bot to its initial position
@@ -391,53 +428,11 @@ if (sim_call_type==sim_childscriptcall_actuation) then
         child=simGetObjectChild(h,ind)
       end
     end
+    -- END RESTORE
 
-    cnt = 0
-    step = population[counter][2]
-    vstep = population[counter][3]
-    z = population[counter][4]
-    population[counter][5] = xdist
-    population[counter][6] = finish_time
-    population[counter][7] = fitness_test(finish_time,xdist)
-    counter = counter + 1
+    baseHandle=simGetObjectHandle('hexa_base') -- get pointer to the base
 
-
-    if (counter > N) then
-      print_population(population)
-      save_gen_csv(population, generation)
-      fitness_sum = fitness_stats(population)
-
-      if generation >= 200 then
-        finish_and_close(population)
-      else
-        children = {}
-        io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
-
-        -- Add best parent
-        children[1] = get_best_parent(population)
-
-        print(#children)
-
-        -- Make childs
-        i = 2
-        while #children < N do
-          children[i] = add_to_population(population, children,fitness_sum)
-          i = i +1
-        end
-
-        -- io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
-        population = children
-        io.write("population " .. #population .. "\n children " .. #children .."\n----------------------\n")
-      end
-
-      counter = 1
-      generation = generation + 1
-      print("The next generation is:",generation)
-
-    end
   end
-  -- END RESTORE
-
   -- **********************************************************************
 
   -- convert magnitude r to x-y vector according to set direction (but, we normally only go straight ahead)
