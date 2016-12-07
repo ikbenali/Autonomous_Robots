@@ -34,9 +34,9 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     for i = 1, N do
       population[i] = {}
       population[i][1] = i
-      population[i][2] = randomFloat(0.001,0.01)
-      population[i][3] = randomFloat(0.001,0.02)
-      population[i][4] = randomFloat(-0.01,0.03)
+      population[i][2] = randomFloat(0.008,0.01)
+      population[i][3] = randomFloat(0.009,0.02)
+      population[i][4] = randomFloat(-0.01,0.05)
       population[i][5] = 0
       population[i][6] = 0
       population[i][7] = 0
@@ -154,12 +154,30 @@ if (sim_call_type==sim_childscriptcall_actuation) then
   end
 
   function crossover(parent1, parent2, generation, population,children)
+
+    if (parent1[7] < 15 and parent2[7] < 15) then
+      return arithmetic(parent1,parent2,population,children)
+    end
+
     if generation % 2 == 0 then
       return interpolation(parent1, parent2, population,children)
     else
       return extrapolation(parent1, parent2, population,children)
     end
   end
+
+  function arithmetic(parent1,parent2,population,children)
+    child = {0,0,0,0,0,0,0}
+    -- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
+    child[1] = #children + 1
+
+    for i = 2, 4 do
+      child[i] = (parent1[i] + parent2[i]) / 2
+    end
+
+    return child
+  end
+
 
   function interpolation(parent1, parent2, population,children)
     child = {0,0,0,0,0,0,0}
@@ -169,7 +187,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     for i = 2, 4 do
 
       alpha = randomFloat(0,1)
-      beta = (alpha * parent1[7]) / ((alpha * parent1[7]) + ((1 - alpha) * parent2[7]))
+      beta = (alpha * parent2[7]) / ((alpha * parent1[7]) + ((1 - alpha) * parent2[7]))
 
       child[i] = beta * parent1[i] + (1 - beta) * parent2[i]
     end
@@ -190,7 +208,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       if (beta < 1) then
         child[i] = parent2[i] + ((1 - beta) * (parent1[i] - parent2[i]))
       else
-        child[i] = parent1[i] + (beta - 1) * (parent2[i] - parent1[i])
+        child[i] = parent1[i] + ((beta - 1) * (parent2[i] - parent1[i]))
       end
     end
     return child
@@ -198,7 +216,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
   function mutation(person, population,children)
     child = {0,0,0,0,0,0,0}
-    child[1] = #children
+    child[1] = #children + 1
     for i = 2, 4 do
       child[i] = person[i] + randomFloat(0 , 0.0001)
     end
