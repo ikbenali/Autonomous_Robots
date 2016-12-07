@@ -22,7 +22,6 @@ if (sim_call_type==sim_childscriptcall_actuation) then
   -- ************************************************************************
   -- Genetic Algorithm
   -- ************************************************************************
-  math.randomseed( os.time() )
 
   function randomFloat(lower, upper)
     return lower + math.random() * (upper - lower);
@@ -36,8 +35,8 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       population[i] = {}
       population[i][1] = i
       population[i][2] = randomFloat(0.001,0.01)
-      population[i][3] = randomFloat(0.001,0.01)
-      population[i][4] = randomFloat(-0.03,0.06)
+      population[i][3] = randomFloat(0.001,0.02)
+      population[i][4] = randomFloat(-0.01,0.03)
       population[i][5] = 0
       population[i][6] = 0
       population[i][7] = 0
@@ -98,7 +97,6 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       if population[i][7] > fitness_max then
         fitness_max = population[i][7]
       end
-
       fitness_sum = fitness_sum + population[i][7]
     end
 
@@ -138,7 +136,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     return fittest
   end
 
-  function add_to_population(population,children, fitness_sum)
+  function add_to_population(population,children, fitness_sum,generation)
 
     mutationChance = randomFloat(0, 1)
     if mutationChance <= 0.001 then
@@ -150,10 +148,8 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       repeat
         parent2 = getParent(population, fitness_sum)
       until(parent1 ~= parent2)
-      print("The chosen parents are with fitness:",parent1[7],parent2[7], "\n")
       child = crossover(parent1, parent2, generation, population,children)
     end
-
     return child
   end
 
@@ -169,28 +165,32 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     child = {0,0,0,0,0,0,0}
     -- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
     child[1] = #children + 1
-    alpha = randomFloat(0,1)
-    beta = (alpha * parent1[7]) / ((alpha * parent1[7]) + ((1 - alpha) * parent2[7]))
 
     for i = 2, 4 do
-      child[i] = beta * parent1[i] + (1-beta) * parent2[i]
+
+      alpha = randomFloat(0,1)
+      beta = (alpha * parent1[7]) / ((alpha * parent1[7]) + ((1 - alpha) * parent2[7]))
+
+      child[i] = beta * parent1[i] + (1 - beta) * parent2[i]
     end
 
     return child
   end
 
   function extrapolation(parent1, parent2, population,children)
+    -- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
     child = {0,0,0,0,0,0,0}
     child[1] = #children + 1
-    -- Child has same structure as parent child(index,VAR1,VAR2,VAR3,xdist,time,fit)
-    alpha = randomFloat(0,1)
-    beta = (2*alpha * parent1[7]) / (alpha * parent1[7] + (1 - alpha) * parent2[7])
 
     for i = 2, 4 do
+
+      alpha = randomFloat(0,1)
+      beta = (2 * alpha * parent1[7]) / ((alpha*parent1[7]) + ((1 - alpha) * parent2[7]))
+
       if (beta < 1) then
-        child[i] = parent2[i] + ((1-beta) * parent1[i]) * (parent1[i] - parent2[i])
+        child[i] = parent2[i] + ((1 - beta) * (parent1[i] - parent2[i]))
       else
-        child[i] = parent1[i] + (beta-1) * parent2[i] * (parent2[i] - parent1[i])
+        child[i] = parent1[i] + (beta - 1) * (parent2[i] - parent1[i])
       end
     end
     return child
@@ -198,7 +198,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
   function mutation(person, population,children)
     child = {0,0,0,0,0,0,0}
-    child[1] = #children + 1
+    child[1] = #children
     for i = 2, 4 do
       child[i] = person[i] + randomFloat(0 , 0.0001)
     end
@@ -239,7 +239,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     generation = 0
     counter = 1
-    N = 5 -- Matrix rows and population size-
+    N = 3 -- Matrix rows and population size-
     population = createpopulation(N) -- create the matrix
 
     baseHandle=simGetObjectHandle('hexa_base') -- get pointer to the base
@@ -389,7 +389,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
         -- Make childs
         i = 1
         while #children < N do
-          children[i] = add_to_population(population, children,fitness_sum)
+          children[i] = add_to_population(population, children,fitness_sum,generation)
           i = i +1
         end
 
@@ -431,21 +431,6 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     -- END RESTORE
 
     baseHandle=simGetObjectHandle('hexa_base') -- get pointer to the base
-    for i=1,tableLength,1 do -- fill table with zeros
-      table.insert(xMovementTable,0)
-      table.insert(yMovementTable,0)
-      table.insert(zMovementTable,0)
-    end
-
-    phase=0 -- phase = movement phase (finite state machine)
-    r=0 -- horizontal movement position in step
-    rearExtent = -0.04
-    c=8
-    cm0=4
-    cm1=16
-    prevSt=1
-
-
   end
   -- **********************************************************************
 
