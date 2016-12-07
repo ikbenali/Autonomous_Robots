@@ -37,7 +37,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
       population[i][1] = i
       population[i][2] = randomFloat(0.001,0.01)
       population[i][3] = randomFloat(0.001,0.01)
-      population[i][4] = - randomFloat(0,0.04)
+      population[i][4] = - randomFloat(0,0.03)
       population[i][5] = 0
       population[i][6] = 0
       population[i][7] = 0
@@ -132,6 +132,9 @@ if (sim_call_type==sim_childscriptcall_actuation) then
         fittest = v
       end
     end
+
+    fittest[1] = 1
+    print(fittest[7])
 
     return fittest
   end
@@ -238,7 +241,7 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
     generation = 0
     counter = 1
-    N = 15 -- Matrix rows and population size-
+    N = 5 -- Matrix rows and population size-
     population = createpopulation(N) -- create the matrix
 
     baseHandle=simGetObjectHandle('hexa_base') -- get pointer to the base
@@ -412,6 +415,8 @@ if (sim_call_type==sim_childscriptcall_actuation) then
 
         -- Add best parent
         children[1] = get_best_parent(population)
+
+        print(#children)
 
         -- Make childs
         i = 2
