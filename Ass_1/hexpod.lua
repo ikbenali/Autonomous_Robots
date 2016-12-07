@@ -35,9 +35,9 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     for i = 1, N do
       population[i] = {}
       population[i][1] = i
-      population[i][2] = 0.01
-      population[i][3] = 0.01
-      population[i][4] = 0.02
+      population[i][2] = randomFloat(0.001,0.01)
+      population[i][3] = randomFloat(0.001,0.01)
+      population[i][4] = randomFloat(-0.03,0.06)
       population[i][5] = 0
       population[i][6] = 0
       population[i][7] = 0
@@ -431,6 +431,20 @@ if (sim_call_type==sim_childscriptcall_actuation) then
     -- END RESTORE
 
     baseHandle=simGetObjectHandle('hexa_base') -- get pointer to the base
+    for i=1,tableLength,1 do -- fill table with zeros
+      table.insert(xMovementTable,0)
+      table.insert(yMovementTable,0)
+      table.insert(zMovementTable,0)
+    end
+
+    phase=0 -- phase = movement phase (finite state machine)
+    r=0 -- horizontal movement position in step
+    rearExtent = -0.04
+    c=8
+    cm0=4
+    cm1=16
+    prevSt=1
+
 
   end
   -- **********************************************************************
